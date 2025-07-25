@@ -35,6 +35,15 @@ const uint8_t LIGHT_DURATION_HOURS = 6;
 const uint8_t DAY_START_HOUR = 6;
 const uint8_t DAY_END_HOUR   = 20;
 
+// Sensor de fluxo de água (pulsos) → ADC1_CH6 / GPIO34
+const uint8_t FLOW_SENSOR_PIN     = 34;
+// Verificar fluxo a cada 30 segundos
+typedef unsigned long ul;
+const ul FLOW_CHECK_MS            = 30UL * 1000UL;
+// Mínimo de pulsos em 30s para considerar fluxo OK
+const unsigned int MIN_FLOW_PULSES = 100;
+
+
 // Wi-Fi / NTP (preencha com sua rede e fuso)
 const char* WIFI_SSID     = "al_capone";
 const char* WIFI_PASSWORD = "Brooklyn1899";
