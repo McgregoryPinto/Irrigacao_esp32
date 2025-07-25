@@ -14,6 +14,7 @@ bool pumpState  = false;
 bool lightState = false;
 
 void connectWiFi() {
+  char charIP[30]={};
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("WiFi...");
@@ -22,6 +23,8 @@ void connectWiFi() {
     delay(500);
   }
   Serial.println("OK");
+  sprintf(charIP, "%s", WiFi.localIP().toString());
+  Serial.println(charIP);
   configTzTime(TZ_INFO, "pool.ntp.org", "time.nist.gov");
 }
 

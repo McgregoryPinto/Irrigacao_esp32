@@ -36,8 +36,8 @@ const uint8_t DAY_START_HOUR = 6;
 const uint8_t DAY_END_HOUR   = 20;
 
 // Wi-Fi / NTP (preencha com sua rede e fuso)
-const char* WIFI_SSID     = "SEU_SSID";
-const char* WIFI_PASSWORD = "SUA_SENHA";
+const char* WIFI_SSID     = "al_capone";
+const char* WIFI_PASSWORD = "Brooklyn1899";
 // Fuso horário de Brasília
 const char* TZ_INFO       = "America/Sao_Paulo";
 
