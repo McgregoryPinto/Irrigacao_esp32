@@ -5,6 +5,15 @@
 #include <WebServer.h>
 WebServer server(80);
 
+// --- Sensor de fluxo de água ---
+volatile unsigned int flowPulseCount = 0;
+unsigned long lastFlowCheck = 0;
+
+void IRAM_ATTR onFlowPulse() {
+  flowPulseCount++;
+}
+
+
 
 bool sessionActive[NUM_SESSIONS]   = {false};
 unsigned long sessionStart[NUM_SESSIONS]  = {0};
@@ -37,6 +46,10 @@ bool isLightPeriod(int h) {
 
 void setup() {
   Serial.begin(115200);
+  // configura sensor de fluxo de água (pulsos)
+  pinMode(FLOW_SENSOR_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), onFlowPulse, RISING);
+
   connectWiFi();
 
   for (int i = 0; i < NUM_SESSIONS; i++) {
