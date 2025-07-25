@@ -1,0 +1,44 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#include <stdint.h>
+
+#define NUM_SESSIONS 5
+
+// Sensores de umidade: ADC1_CH1 a ADC1_CH5 → GPIO 37, 38, 39, 32, 33
+const uint8_t sensorPins[NUM_SESSIONS] = {37, 38, 39, 32, 33};
+
+// Relés de irrigação: GPIO14 a GPIO18
+const uint8_t relayPins[NUM_SESSIONS]  = {14, 15, 16, 17, 18};
+
+// Relé da bomba (única)
+const uint8_t pumpPin  = 12;
+// Relé da luz artificial (única)
+const uint8_t lightPin = 13;
+
+// Threshold de umidade (%): 30%
+const uint8_t HUMIDITY_THRESHOLD_PERCENT = 30;
+// Converte % para valor ADC (0–4095) de secura:
+// (100–30)% → 70% de “seco” → 0.7*4095 ≃ 2866
+const uint16_t HUMIDITY_THRESHOLD_READING = (uint16_t)(((100 - HUMIDITY_THRESHOLD_PERCENT) * 4095UL) / 100UL);
+
+// Ciclo de irrigação: 10 minutos (milissegundos)
+const unsigned long IRRIGATION_DURATION = 10UL * 60UL * 1000UL;
+// Cooldown entre ciclos na mesma sessão: 1 hora
+const unsigned long IRRIGATION_COOLDOWN = 1UL * 60UL * 60UL * 1000UL;
+
+// Horário de início da luz artificial e duração (horas locais)
+const uint8_t LIGHT_START_HOUR     = 10;
+const uint8_t LIGHT_DURATION_HOURS = 6;
+
+// Período “dia” em que nenhum recurso pode funcionar à noite.
+const uint8_t DAY_START_HOUR = 6;
+const uint8_t DAY_END_HOUR   = 20;
+
+// Wi-Fi / NTP (preencha com sua rede e fuso)
+const char* WIFI_SSID     = "SEU_SSID";
+const char* WIFI_PASSWORD = "SUA_SENHA";
+// Fuso horário de Brasília
+const char* TZ_INFO       = "America/Sao_Paulo";
+
+#endif // CONFIG_H
