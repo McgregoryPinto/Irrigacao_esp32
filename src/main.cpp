@@ -2,6 +2,9 @@
 #include <WiFi.h>
 #include <time.h>
 #include "config.h"
+#include <WebServer.h>
+WebServer server(80);
+
 
 bool sessionActive[NUM_SESSIONS]   = {false};
 unsigned long sessionStart[NUM_SESSIONS]  = {0};
@@ -40,6 +43,19 @@ void setup() {
   }
   pinMode(pumpPin, OUTPUT);  digitalWrite(pumpPin, LOW);
   pinMode(lightPin, OUTPUT); digitalWrite(lightPin, LOW);
+  server.on("/", HTTP_GET, [](){
+    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Monitoramento Horta</title></head><body>";
+    html += "<h1>Monitoramento da Horta</h1>";
+    html += "<p><strong>Luz</strong>: Início às " + String(LIGHT_START_HOUR) + ":00 por " + String(LIGHT_DURATION_HOURS) + "h</p>";
+    html += "<p><strong>Irrigação</strong>: Duração " + String(IRRIGATION_DURATION / 60000) + "min, intervalo " + String(IRRIGATION_COOLDOWN / 3600000) + "h</p>";
+    html += "<p><strong>Bomba</strong>: " + String(pumpState ? "ON" : "OFF") + "</p>";
+    for (int i = 0; i < NUM_SESSIONS; i++) {
+      html += "<p><strong>Relé " + String(i) + "</strong>: " + String(sessionActive[i] ? "ON" : "OFF") + "</p>";
+    }
+    html += "</body></html>";
+    server.send(200, "text/html", html);
+  });
+  server.begin();
 }
 
 void loop() {
@@ -88,6 +104,7 @@ void loop() {
     pumpState = false;
     Serial.println("Bomba OFF");
   }
+  server.handleClient();
 
   // 3) LUZ ARTIFICIAL (única)
   bool shouldLight = isDaytime(hour) && isLightPeriod(hour);
