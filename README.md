@@ -9,6 +9,7 @@ Este projeto implementa um sistema de monitoramento e irrigação automática de
 - Ciclo de irrigação de **10 minutos** com cooldown de **1 hora** entre ciclos na mesma sessão.
 - Controle do período diurno (6h–20h) e de luz artificial (início às 10h com duração de 6h).
 - Servidor web integrado para visualização do status via HTTP.
+- Interface web para configuração interativa de parâmetros (umidade do solo, duração de irrigação, cooldown, horário de luz), com persistência na memória não-volátil do ESP32 via biblioteca Preferences.
 
 ## Requisitos de Hardware
 
@@ -59,6 +60,20 @@ Este projeto implementa um sistema de monitoramento e irrigação automática de
    http://<IP_do_ESP32>/
    ```
 4. A página web informará o estado da luz, bomba e sessões de irrigação.
+
+## Configuração via Web UI
+
+Após conectar ao dispositivo à rede Wi-Fi e abrir o IP no navegador:
+
+1. Acesse `http://<IP_do_ESP32>/config` para abrir a página de configuração.
+2. Ajuste os parâmetros conforme necessidade:
+   - **Soil-moisture threshold (%)**: percentual de umidade para disparo da irrigação.
+   - **Irrigation duration (min)**: duração de cada ciclo de irrigação em minutos.
+   - **Irrigation cooldown (h)**: tempo mínimo em horas entre ciclos na mesma sessão.
+   - **Light start hour (h)**: hora do dia (0–23) para início da luz artificial.
+   - **Light duration (h)**: duração da luz artificial em horas.
+3. Clique em **Salvar** para persistir as configurações na memória não-volátil do ESP32.
+
 
 ## Estrutura do Projeto
 
