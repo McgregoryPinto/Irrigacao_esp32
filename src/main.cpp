@@ -72,6 +72,14 @@ void setup() {
     server.send(200, "text/html", html);
   });
   server.begin();
+  Serial.println("=== Configuração Iniciada ===");
+  Serial.printf("Sessões: %d\n", NUM_SESSIONS);
+  Serial.print("Duração irrigação: "); Serial.print(IRRIGATION_DURATION / 60000); Serial.println(" min");
+  Serial.print("Cooldown irrigação: "); Serial.print(IRRIGATION_COOLDOWN / 3600000); Serial.println(" h");
+  Serial.print("Luz: inicia às "); Serial.print(LIGHT_START_HOUR); Serial.print(" h por "); Serial.print(LIGHT_DURATION_HOURS); Serial.println(" h");
+  Serial.println("Servidor HTTP iniciado.");
+  Serial.print("Acesse em: http://"); Serial.print(WiFi.localIP()); Serial.println("/");
+  Serial.println("===========================");
 }
 
 void loop() {
