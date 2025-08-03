@@ -29,22 +29,24 @@ Este projeto implementa um sistema de monitoramento e irrigação automática de
 
 ### Passos de Instalação
 
+- Instale o PlatformIO CLI (`pip install platformio`) ou use a extensão PlatformIO no VSCode.
+
 1. Clone o repositório:
    ```bash
    git clone https://github.com/McgregoryPinto/Irrigacao_esp32.git
    cd Irrigacao_esp32
    ```
-2. Abra o projeto no VSCode (PlatformIO) ou no terminal com CLI:
-   ```bash
-   pio project init --board esp32dev --project-option "framework=arduino"
-   ```
-3. Edite o arquivo `src/config.h` para definir:
+2. Edite `src/config.h` para definir:
    - `WIFI_SSID` e `WIFI_PASSWORD` da sua rede.
    - `TZ_INFO` (ex.: "America/Sao_Paulo").
    - Outros parâmetros de irrigação e luz conforme necessidade.
-4. Compile e faça upload para o ESP32:
+3. Compile para o ESP32 (placa `esp32doit-devkit-v1`):
    ```bash
-   pio run -t upload
+   pio run -e esp32doit-devkit-v1
+   ```
+4. Faça upload para o ESP32:
+   ```bash
+   pio run -e esp32doit-devkit-v1 -t upload
    ```
 
 ## Uso
