@@ -122,7 +122,7 @@ bool isDaytime(int h) {
   return h >= DAY_START_HOUR && h < DAY_END_HOUR;
 }
 bool isLightPeriod(int h) {
-  return h >= LIGHT_START_HOUR && h < (LIGHT_START_HOUR + LIGHT_DURATION_HOURS);
+  return h >= cfgLightStartHourVar && h < (cfgLightStartHourVar + cfgLightDurationH);
 }
 
 void setup() {
