@@ -3,6 +3,27 @@
 #include <time.h>
 #include "config.h"
 #include <WebServer.h>
+#include <Preferences.h>
+
+// Preferences instance
+Preferences prefs;
+
+// Dynamic configuration variables (initial defaults)
+uint8_t cfgHumidityThresholdPercent = HUMIDITY_THRESHOLD_PERCENT;
+uint16_t cfgIrrigationDurationMin = IRRIGATION_DURATION / 60000;
+uint16_t cfgIrrigationCooldownH = IRRIGATION_COOLDOWN / 3600000;
+uint8_t cfgLightStartHourVar = LIGHT_START_HOUR;
+uint8_t cfgLightDurationH = LIGHT_DURATION_HOURS;
+
+// Derived runtime values
+uint16_t cfgHumidityThresholdReading;
+unsigned long cfgIrrigationDuration;
+unsigned long cfgIrrigationCooldown;
+
+// Function prototypes
+void loadConfig();
+void handleConfigGet();
+void handleConfigPost();
 WebServer server(80);
 
 // --- Sensor de fluxo de água ---
