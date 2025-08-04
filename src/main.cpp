@@ -26,6 +26,66 @@ void handleConfigGet();
 void handleConfigPost();
 WebServer server(80);
 
+// Load configuration and define handlers
+void loadConfig() {
+  prefs.begin("config", false);
+  cfgHumidityThresholdPercent = prefs.getUChar("humidityThresholdPercent", cfgHumidityThresholdPercent);
+  cfgIrrigationDurationMin = prefs.getUInt("irrigationDurationMin", cfgIrrigationDurationMin);
+  cfgIrrigationCooldownH = prefs.getUInt("irrigationCooldownH", cfgIrrigationCooldownH);
+  cfgLightStartHourVar = prefs.getUChar("lightStartHourVar", cfgLightStartHourVar);
+  cfgLightDurationH = prefs.getUChar("lightDurationH", cfgLightDurationH);
+  prefs.end();
+  // Derived values
+  cfgHumidityThresholdReading = (uint16_t)(((100 - cfgHumidityThresholdPercent) * 4095UL) / 100UL);
+  cfgIrrigationDuration = (unsigned long)cfgIrrigationDurationMin * 60000UL;
+  cfgIrrigationCooldown = (unsigned long)cfgIrrigationCooldownH * 3600000UL;
+}
+
+void handleConfigGet() {
+  String html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Configuração</title></head><body>";
+  html += "<h1>Configuração de Parâmetros</h1>";
+  html += "<form method=\"POST\" action=\"/config\">";
+  html += "<label>Soil-moisture threshold (%) <input type=\"number\" name=\"humidityThresholdPercent\" min=\"0\" max=\"100\" value=\"" + String(cfgHumidityThresholdPercent) + "\"></label><br>";
+  html += "<label>Irrigation duration (min) <input type=\"number\" name=\"irrigationDurationMin\" min=\"1\" max=\"120\" value=\"" + String(cfgIrrigationDurationMin) + "\"></label><br>";
+  html += "<label>Irrigation cooldown (h) <input type=\"number\" name=\"irrigationCooldownH\" min=\"0\" max=\"24\" value=\"" + String(cfgIrrigationCooldownH) + "\"></label><br>";
+  html += "<label>Light start hour (h) <input type=\"number\" name=\"lightStartHourVar\" min=\"0\" max=\"23\" value=\"" + String(cfgLightStartHourVar) + "\"></label><br>";
+  html += "<label>Light duration (h) <input type=\"number\" name=\"lightDurationH\" min=\"0\" max=\"24\" value=\"" + String(cfgLightDurationH) + "\"></label><br>";
+  html += "<input type=\"submit\" value=\"Salvar\">";
+  html += "</form>";
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+void handleConfigPost() {
+  if (server.hasArg("humidityThresholdPercent")) {
+    cfgHumidityThresholdPercent = server.arg("humidityThresholdPercent").toInt();
+  }
+  if (server.hasArg("irrigationDurationMin")) {
+    cfgIrrigationDurationMin = server.arg("irrigationDurationMin").toInt();
+  }
+  if (server.hasArg("irrigationCooldownH")) {
+    cfgIrrigationCooldownH = server.arg("irrigationCooldownH").toInt();
+  }
+  if (server.hasArg("lightStartHourVar")) {
+    cfgLightStartHourVar = server.arg("lightStartHourVar").toInt();
+  }
+  if (server.hasArg("lightDurationH")) {
+    cfgLightDurationH = server.arg("lightDurationH").toInt();
+  }
+  prefs.begin("config", false);
+  prefs.putUChar("humidityThresholdPercent", cfgHumidityThresholdPercent);
+  prefs.putUInt("irrigationDurationMin", cfgIrrigationDurationMin);
+  prefs.putUInt("irrigationCooldownH", cfgIrrigationCooldownH);
+  prefs.putUChar("lightStartHourVar", cfgLightStartHourVar);
+  prefs.putUChar("lightDurationH", cfgLightDurationH);
+  prefs.end();
+  cfgHumidityThresholdReading = (uint16_t)(((100 - cfgHumidityThresholdPercent) * 4095UL) / 100UL);
+  cfgIrrigationDuration = (unsigned long)cfgIrrigationDurationMin * 60000UL;
+  cfgIrrigationCooldown = (unsigned long)cfgIrrigationCooldownH * 3600000UL;
+  server.sendHeader("Location", "/config");
+  server.send(303, "text/plain", "");
+}
+
 // --- Sensor de fluxo de água ---
 volatile unsigned int flowPulseCount = 0;
 unsigned long lastFlowCheck = 0;
@@ -72,6 +132,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), onFlowPulse, RISING);
 
   connectWiFi();
+  // load persisted configuration
+  loadConfig();
 
   for (int i = 0; i < NUM_SESSIONS; i++) {
     pinMode(sensorPins[i], INPUT);
