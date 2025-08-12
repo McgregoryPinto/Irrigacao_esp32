@@ -4,7 +4,7 @@
 #include "config.h"
 #include <WebServer.h>
 #include <Preferences.h>
-
+#include <nvs_flash.h>
 // Preferences instance
 Preferences prefs;
 
@@ -14,9 +14,9 @@ int cfgIrrgtDrtion = IRRIGATION_DURATION / 60000;
 int cfgIrrgCoolDwn = IRRIGATION_COOLDOWN / 3600000;
 int cfgLightStartH = LIGHT_START_HOUR;
 int cfgLightDurationH = LIGHT_DURATION_HOURS;
+int cfgHumidityThresholdReading = HUMIDITY_THRESHOLD_READING;
 
 // Derived runtime values
-int cfgHumidityThresholdReading;
 unsigned long cfgIrrigationDuration;
 unsigned long cfgIrrigationCooldown;
 
@@ -26,13 +26,38 @@ void handleConfigGet();
 void handleConfigPost();
 WebServer server(80);
 
+// normalize hour to miliseconds
+unsigned long normalizeHourToMileseconds(int hour) {
+  return (unsigned long)hour * 3600000UL;
+}
+
+// normalize miliseconds to hour
+int normalizeMilesecondsToHour(unsigned long ms) {
+  return (int)(ms / 3600000UL);
+}
+
+// normalize min to miliseconds
+unsigned long normalizeMinToMileseconds(int min) {
+  return (unsigned long)min * 60000UL;
+}
+
+// normalize miliseconds to min
+int normalizeMilesecondsToMin(unsigned long ms) {
+  return (int)(ms / 60000UL);
+}
+
+// normalize threshold percent to reading
+int normalizeThresholdPercentToReading(int percent) {
+  return (int)(((100 - percent) * 4095UL) / 100UL);
+}
+
 // Load configuration and define handlers
 void loadConfig() {
   prefs.begin("config", false);
-  cfgHumidPerct = prefs.getUInt("humidityThresholdPercent", cfgHumidPerct);
-  cfgIrrgtDrtion = prefs.getUInt("irrigationDurationMin", cfgIrrgtDrtion);
-  cfgIrrgCoolDwn = prefs.getUInt("irrigationCooldownH", cfgIrrgCoolDwn);
-  cfgLightStartH = prefs.getUInt("lightStartHourVar", cfgLightStartH);
+  cfgHumidPerct = prefs.getUInt("cfgHumidPerct", cfgHumidPerct);
+  cfgIrrgtDrtion = prefs.getUInt("cfgIrrgtDrtion", cfgIrrgtDrtion);
+  cfgIrrgCoolDwn = prefs.getUInt("cfgIrrgCoolDwn", cfgIrrgCoolDwn);
+  cfgLightStartH = prefs.getUInt("cfgLightStartH", cfgLightStartH);
   cfgLightDurationH = prefs.getUInt("lightDurationH", cfgLightDurationH);
   prefs.end();
   Serial.printf("Configuração carregada:\n");
@@ -140,7 +165,7 @@ bool isLightPeriod(int h) {
 // This is useful for resetting the configuration
 // or if you want to start fresh without any saved data.
 // Use with caution, as it will delete all saved preferences.
-#include <nvs_flash.h>
+
 void erasePreferences() {
     Serial.println("Resetting NVS...");
     nvs_flash_erase(); // erase the NVS partition and...
@@ -167,8 +192,8 @@ void setup() {
   server.on("/", HTTP_GET, [](){
     String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Monitoramento Horta</title></head><body>";
     html += "<h1>Monitoramento da Horta</h1>";
-    html += "<p><strong>Luz</strong>: Início às " + String(LIGHT_START_HOUR) + ":00 por " + String(LIGHT_DURATION_HOURS) + "h</p>";
-    html += "<p><strong>Irrigação</strong>: Duração " + String(IRRIGATION_DURATION / 60000) + "min, intervalo " + String(IRRIGATION_COOLDOWN / 3600000) + "h</p>";
+    html += "<p><strong>Luz</strong>: Início às " + String(cfgLightStartH) + ":00 por " + String(cfgLightDurationH) + "h</p>";
+    html += "<p><strong>Irrigação</strong>: Duração " + String(cfgIrrgtDrtion) + "min, intervalo " + String(cfgIrrgCoolDwn) + "h</p>";
     html += "<p><strong>Bomba</strong>: " + String(pumpState ? "ON" : "OFF") + "</p>";
     for (int i = 0; i < NUM_SESSIONS; i++) {
       html += "<p><strong>Relé " + String(i) + "</strong>: " + String(sessionActive[i] ? "ON" : "OFF") + "</p>";
@@ -184,9 +209,9 @@ void setup() {
   server.begin();
   Serial.println("=== Configuração Iniciada ===");
   Serial.printf("Sessões: %d\n", NUM_SESSIONS);
-  Serial.print("Duração irrigação: "); Serial.print(IRRIGATION_DURATION / 60000); Serial.println(" min");
-  Serial.print("Cooldown irrigação: "); Serial.print(IRRIGATION_COOLDOWN / 3600000); Serial.println(" h");
-  Serial.print("Luz: inicia às "); Serial.print(LIGHT_START_HOUR); Serial.print(" h por "); Serial.print(LIGHT_DURATION_HOURS); Serial.println(" h");
+  Serial.print("Duração irrigação: "); Serial.print(cfgIrrgtDrtion); Serial.println(" min");
+  Serial.print("Cooldown irrigação: "); Serial.print(cfgIrrgCoolDwn); Serial.println(" h");
+  Serial.print("Luz: inicia às "); Serial.print(cfgLightStartH); Serial.print(" h por "); Serial.print(cfgLightDurationH); Serial.println(" h");
   Serial.println("Servidor HTTP iniciado.");
   Serial.print("Acesse em: http://"); Serial.print(WiFi.localIP()); Serial.println("/");
   Serial.println("===========================");
@@ -206,10 +231,10 @@ void loop() {
 
     if (sessionActive[i]) {
       // terminar ciclo após 10min ou se anoitecer
-      if ((now - sessionStart[i] >= IRRIGATION_DURATION) || !isDaytime(hour)) {
+      if ((now - sessionStart[i] >= cfgIrrigationDuration) || !isDaytime(hour)) {
         digitalWrite(relayPins[i], LOW);
         sessionActive[i] = false;
-        nextAllowed[i]   = now + IRRIGATION_COOLDOWN;
+        nextAllowed[i]   = now + cfgIrrigationCooldown;
         Serial.printf("Sessão %d → OFF\n", i);
       } else {
         anyOn = true;
@@ -218,7 +243,7 @@ void loop() {
     } else {
       // iniciar se seco, for dia e cooldown passou
       int v = analogRead(sensorPins[i]);
-      if (isDaytime(hour) && now >= nextAllowed[i] && v > HUMIDITY_THRESHOLD_READING) {
+      if (isDaytime(hour) && now >= nextAllowed[i] && v > cfgHumidityThresholdReading) {
         digitalWrite(relayPins[i], HIGH);
         sessionActive[i] = true;
         sessionStart[i]  = now;
