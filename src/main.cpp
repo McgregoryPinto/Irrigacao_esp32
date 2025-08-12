@@ -9,14 +9,14 @@
 Preferences prefs;
 
 // Dynamic configuration variables (initial defaults)
-uint8_t cfgHumidityThresholdPercent = HUMIDITY_THRESHOLD_PERCENT;
-uint16_t cfgIrrigationDurationMin = IRRIGATION_DURATION / 60000;
-uint16_t cfgIrrigationCooldownH = IRRIGATION_COOLDOWN / 3600000;
-uint8_t cfgLightStartHourVar = LIGHT_START_HOUR;
-uint8_t cfgLightDurationH = LIGHT_DURATION_HOURS;
+int cfgHumidPerct = HUMIDITY_THRESHOLD_PERCENT;
+int cfgIrrgtDrtion = IRRIGATION_DURATION / 60000;
+int cfgIrrgCoolDwn = IRRIGATION_COOLDOWN / 3600000;
+int cfgLightStartH = LIGHT_START_HOUR;
+int cfgLightDurationH = LIGHT_DURATION_HOURS;
 
 // Derived runtime values
-uint16_t cfgHumidityThresholdReading;
+int cfgHumidityThresholdReading;
 unsigned long cfgIrrigationDuration;
 unsigned long cfgIrrigationCooldown;
 
@@ -29,26 +29,33 @@ WebServer server(80);
 // Load configuration and define handlers
 void loadConfig() {
   prefs.begin("config", false);
-  cfgHumidityThresholdPercent = prefs.getUChar("humidityThresholdPercent", cfgHumidityThresholdPercent);
-  cfgIrrigationDurationMin = prefs.getUInt("irrigationDurationMin", cfgIrrigationDurationMin);
-  cfgIrrigationCooldownH = prefs.getUInt("irrigationCooldownH", cfgIrrigationCooldownH);
-  cfgLightStartHourVar = prefs.getUChar("lightStartHourVar", cfgLightStartHourVar);
-  cfgLightDurationH = prefs.getUChar("lightDurationH", cfgLightDurationH);
+  cfgHumidPerct = prefs.getUInt("humidityThresholdPercent", cfgHumidPerct);
+  cfgIrrgtDrtion = prefs.getUInt("irrigationDurationMin", cfgIrrgtDrtion);
+  cfgIrrgCoolDwn = prefs.getUInt("irrigationCooldownH", cfgIrrgCoolDwn);
+  cfgLightStartH = prefs.getUInt("lightStartHourVar", cfgLightStartH);
+  cfgLightDurationH = prefs.getUInt("lightDurationH", cfgLightDurationH);
   prefs.end();
+  Serial.printf("Configuração carregada:\n");
+  Serial.printf("  Humidity threshold percent: %d\n", cfgHumidPerct);
+  Serial.printf("  Irrigation duration (min): %d\n", cfgIrrgtDrtion);
+  Serial.printf("  Irrigation cooldown (h): %d\n", cfgIrrgCoolDwn);
+  Serial.printf("  Light start hour: %d\n", cfgLightStartH);
+  Serial.printf("  Light duration (h): %d\n", cfgLightDurationH);
+
   // Derived values
-  cfgHumidityThresholdReading = (uint16_t)(((100 - cfgHumidityThresholdPercent) * 4095UL) / 100UL);
-  cfgIrrigationDuration = (unsigned long)cfgIrrigationDurationMin * 60000UL;
-  cfgIrrigationCooldown = (unsigned long)cfgIrrigationCooldownH * 3600000UL;
+  cfgHumidityThresholdReading = (int)(((100 - cfgHumidPerct) * 4095UL) / 100UL);
+  cfgIrrigationDuration = (unsigned long)cfgIrrgtDrtion * 60000UL;
+  cfgIrrigationCooldown = (unsigned long)cfgIrrgCoolDwn * 3600000UL;
 }
 
 void handleConfigGet() {
   String html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Configuração</title></head><body>";
   html += "<h1>Configuração de Parâmetros</h1>";
   html += "<form method=\"POST\" action=\"/config\">";
-  html += "<label>Soil-moisture threshold (%) <input type=\"number\" name=\"humidityThresholdPercent\" min=\"0\" max=\"100\" value=\"" + String(cfgHumidityThresholdPercent) + "\"></label><br>";
-  html += "<label>Irrigation duration (min) <input type=\"number\" name=\"irrigationDurationMin\" min=\"1\" max=\"120\" value=\"" + String(cfgIrrigationDurationMin) + "\"></label><br>";
-  html += "<label>Irrigation cooldown (h) <input type=\"number\" name=\"irrigationCooldownH\" min=\"0\" max=\"24\" value=\"" + String(cfgIrrigationCooldownH) + "\"></label><br>";
-  html += "<label>Light start hour (h) <input type=\"number\" name=\"lightStartHourVar\" min=\"0\" max=\"23\" value=\"" + String(cfgLightStartHourVar) + "\"></label><br>";
+  html += "<label>Soil-moisture threshold (%) <input type=\"number\" name=\"humidityThresholdPercent\" min=\"0\" max=\"100\" value=\"" + String(cfgHumidPerct) + "\"></label><br>";
+  html += "<label>Irrigation duration (min) <input type=\"number\" name=\"irrigationDurationMin\" min=\"1\" max=\"120\" value=\"" + String(cfgIrrgtDrtion) + "\"></label><br>";
+  html += "<label>Irrigation cooldown (h) <input type=\"number\" name=\"irrigationCooldownH\" min=\"0\" max=\"24\" value=\"" + String(cfgIrrgCoolDwn) + "\"></label><br>";
+  html += "<label>Light start hour (h) <input type=\"number\" name=\"lightStartHourVar\" min=\"0\" max=\"23\" value=\"" + String(cfgLightStartH) + "\"></label><br>";
   html += "<label>Light duration (h) <input type=\"number\" name=\"lightDurationH\" min=\"0\" max=\"24\" value=\"" + String(cfgLightDurationH) + "\"></label><br>";
   html += "<input type=\"submit\" value=\"Salvar\">";
   html += "</form>";
@@ -58,30 +65,35 @@ void handleConfigGet() {
 
 void handleConfigPost() {
   if (server.hasArg("humidityThresholdPercent")) {
-    cfgHumidityThresholdPercent = server.arg("humidityThresholdPercent").toInt();
+    Serial.printf("Novo threshold: {%s}\n", server.arg("humidityThresholdPercent").c_str());
+    cfgHumidPerct = server.arg("humidityThresholdPercent").toInt();
   }
   if (server.hasArg("irrigationDurationMin")) {
-    cfgIrrigationDurationMin = server.arg("irrigationDurationMin").toInt();
+    Serial.printf("Nova duração irrigação: {%s}\n", server.arg("irrigationDurationMin").c_str());
+    cfgIrrgtDrtion = server.arg("irrigationDurationMin").toInt();
   }
   if (server.hasArg("irrigationCooldownH")) {
-    cfgIrrigationCooldownH = server.arg("irrigationCooldownH").toInt();
+    Serial.printf("Novo cooldown irrigação: {%s}\n", server.arg("irrigationCooldownH").c_str());
+    cfgIrrgCoolDwn = server.arg("irrigationCooldownH").toInt();
   }
   if (server.hasArg("lightStartHourVar")) {
-    cfgLightStartHourVar = server.arg("lightStartHourVar").toInt();
+    Serial.printf("Nova hora início luz: {%s}\n", server.arg("lightStartHourVar").c_str());
+    cfgLightStartH = server.arg("lightStartHourVar").toInt();
   }
   if (server.hasArg("lightDurationH")) {
+    Serial.printf("Nova duração luz: {%s}\n", server.arg("lightDurationH").c_str());
     cfgLightDurationH = server.arg("lightDurationH").toInt();
   }
   prefs.begin("config", false);
-  prefs.putUChar("humidityThresholdPercent", cfgHumidityThresholdPercent);
-  prefs.putUInt("irrigationDurationMin", cfgIrrigationDurationMin);
-  prefs.putUInt("irrigationCooldownH", cfgIrrigationCooldownH);
-  prefs.putUChar("lightStartHourVar", cfgLightStartHourVar);
-  prefs.putUChar("lightDurationH", cfgLightDurationH);
+  prefs.putUInt("cfgHumidPerct", cfgHumidPerct);
+  prefs.putUInt("cfgIrrgtDrtion", cfgIrrgtDrtion);
+  prefs.putUInt("cfgIrrgCoolDwn", cfgIrrgCoolDwn);
+  prefs.putUInt("cfgLightStartH", cfgLightStartH);
+  prefs.putUInt("lightDurationH", cfgLightDurationH);
   prefs.end();
-  cfgHumidityThresholdReading = (uint16_t)(((100 - cfgHumidityThresholdPercent) * 4095UL) / 100UL);
-  cfgIrrigationDuration = (unsigned long)cfgIrrigationDurationMin * 60000UL;
-  cfgIrrigationCooldown = (unsigned long)cfgIrrigationCooldownH * 3600000UL;
+  cfgHumidityThresholdReading = (int)(((100 - cfgHumidPerct) * 4095UL) / 100UL);
+  cfgIrrigationDuration = (unsigned long)cfgIrrgtDrtion * 60000UL;
+  cfgIrrigationCooldown = (unsigned long)cfgIrrgCoolDwn * 3600000UL;
   server.sendHeader("Location", "/config");
   server.send(303, "text/plain", "");
 }
@@ -122,15 +134,25 @@ bool isDaytime(int h) {
   return h >= DAY_START_HOUR && h < DAY_END_HOUR;
 }
 bool isLightPeriod(int h) {
-  return h >= cfgLightStartHourVar && h < (cfgLightStartHourVar + cfgLightDurationH);
+  return h >= cfgLightStartH && h < (cfgLightStartH + cfgLightDurationH);
 }
-
+// Erase NVS partition and reinitialize it
+// This is useful for resetting the configuration
+// or if you want to start fresh without any saved data.
+// Use with caution, as it will delete all saved preferences.
+#include <nvs_flash.h>
+void erasePreferences() {
+    Serial.println("Resetting NVS...");
+    nvs_flash_erase(); // erase the NVS partition and...
+    nvs_flash_init(); // initialize the NVS partition.
+}
 void setup() {
   Serial.begin(115200);
   // configura sensor de fluxo de água (pulsos)
   pinMode(FLOW_SENSOR_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), onFlowPulse, RISING);
-
+  // Uncomment to reset NVS
+  // erasePreferences(); 
   connectWiFi();
   // load persisted configuration
   loadConfig();
@@ -153,6 +175,11 @@ void setup() {
     }
     html += "</body></html>";
     server.send(200, "text/html", html);
+  });
+  server.on("/config", HTTP_GET, handleConfigGet);
+  server.on("/config", HTTP_POST, handleConfigPost);
+  server.onNotFound([]() {
+    server.send(404, "text/plain", "Página não encontrada");
   });
   server.begin();
   Serial.println("=== Configuração Iniciada ===");
@@ -224,6 +251,13 @@ void loop() {
     lightState = false;
     Serial.println("Luz OFF");
   }
-
+  /* teste de impressão 
+  Serial.printf("Hora atual: %02d:%02d:%02d\n", hour, tm_info.tm_min, tm_info.tm_sec);
+  Serial.printf("Bomba: %s, Luz: %s\n", pumpState ? "ON" : "OFF", lightState ? "ON" : "OFF");
+  for (int i = 0; i < NUM_SESSIONS; i++) {
+    Serial.printf("Sessão %d: %s\n", i, sessionActive[i] ? "ON" : "OFF");
+  }
+  */
+  /*fim teste de impressão*/
   delay(1000);
 }
