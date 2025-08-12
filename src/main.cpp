@@ -208,6 +208,7 @@ void setup() {
   });
   server.begin();
   Serial.println("=== Configuração Iniciada ===");
+  Serial.printf("Threshould de umidade: %d (valor para comparação com o sensor)\n",cfgHumidityThresholdReading);
   Serial.printf("Sessões: %d\n", NUM_SESSIONS);
   Serial.print("Duração irrigação: "); Serial.print(cfgIrrgtDrtion); Serial.println(" min");
   Serial.print("Cooldown irrigação: "); Serial.print(cfgIrrgCoolDwn); Serial.println(" h");
