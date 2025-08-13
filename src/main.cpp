@@ -90,6 +90,7 @@ void handleConfigGet() {
   html += "<label>Light duration (h) <input type=\"number\" name=\"lightDurationH\" min=\"0\" max=\"24\" value=\"" + String(cfgLightDurationH) + "\"></label><br>";
   html += "<input type=\"submit\" value=\"Salvar\">";
   html += "</form>";
+  html += "<p><button onclick=\"location.href='/'\">Início</button></p>";
   html += "</body></html>";
   server.send(200, "text/html", html);
 }
@@ -231,7 +232,7 @@ void setup() {
     for (int i = 0; i < NUM_SESSIONS; i++) {
       html += "<p><strong>Relé " + String(i) + "</strong>: " + String(sessionActive[i] ? "ON" : "OFF") + "</p>";
     }
-    html += "</body></html>";
+    html += "<p><button onclick=\"location.href='/config'\">Config</button></p></body></html>";
     server.send(200, "text/html", html);
   });
   server.on("/config", HTTP_GET, handleConfigGet);
