@@ -5,6 +5,12 @@
 #include <WebServer.h>
 #include <Preferences.h>
 #include <nvs_flash.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// Instância do display LCD I2C
+LiquidCrystal_I2C lcd(LCD_I2C_ADDR, LCD_COLUMNS, LCD_ROWS);
+
 // Preferences instance
 Preferences prefs;
 
@@ -133,6 +139,30 @@ void IRAM_ATTR onFlowPulse() {
 
 
 
+
+// LCD display variables
+static unsigned long lastLcdSwitch = 0;
+static bool lcdMode = false;
+
+// Atualiza o display LCD de acordo com lcdMode
+void updateLCD() {
+  lcd.clear();
+  if (!lcdMode) {
+    lcd.setCursor(0, 0);
+    lcd.print(F("S1 S2 S3 S4 S5 L"));
+    lcd.setCursor(0, 1);
+    for (int i = 0; i < NUM_SESSIONS; i++) {
+      lcd.print(sessionActive[i] ? F(" 1") : F(" 0"));
+    }
+    lcd.print(lightState ? F(" 1") : F(" 0"));
+  } else {
+    lcd.setCursor(0, 0);
+    lcd.print(F("Web config|"));
+    lcd.setCursor(0, 1);
+    lcd.print(WiFi.localIP().toString());
+  }
+}
+
 bool sessionActive[NUM_SESSIONS]   = {false};
 unsigned long sessionStart[NUM_SESSIONS]  = {0};
 unsigned long nextAllowed[NUM_SESSIONS]   = {0};
@@ -173,6 +203,9 @@ void erasePreferences() {
 }
 void setup() {
   Serial.begin(115200);
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
   // configura sensor de fluxo de água (pulsos)
   pinMode(FLOW_SENSOR_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), onFlowPulse, RISING);
@@ -284,6 +317,14 @@ void loop() {
     Serial.printf("Sessão %d: %s\n", i, sessionActive[i] ? "ON" : "OFF");
   }
   */
-  /*fim teste de impressão*/
+  // Atualiza LCD a cada 30 segundos
+  if (now - lastLcdSwitch >= 30000) {
+    lcdMode = !lcdMode;
+    lastLcdSwitch = now;
+  }
+  updateLCD();
+
   delay(1000);
+
+
 }
