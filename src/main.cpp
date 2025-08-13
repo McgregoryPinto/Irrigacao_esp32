@@ -155,7 +155,7 @@ bool pumpState  = false;
 bool lightState = false;
 
 // Atualiza o display LCD de acordo com lcdMode
-void updateLCD() {
+void updateLCD(struct tm tm_info) {
   lcd.clear();
   if (!lcdMode) {
     lcd.setCursor(0, 0);
@@ -169,6 +169,7 @@ void updateLCD() {
     lcd.print(lightState ? F(" 1") : F(" 0"));
   } else {
     lcd.setCursor(0, 0);
+    lcd.printf("Web config %02d:%02d",tm_info.tm_hour,tm_info.tm_min);
     lcd.print(F("Web config|"));
     lcd.setCursor(0, 1);
     lcd.print(WiFi.localIP().toString());
@@ -335,7 +336,7 @@ void loop() {
     lcdMode = !lcdMode;
     lastLcdSwitch = now;
   }
-  updateLCD();
+  updateLCD(tm_info);
 
   delay(1000);
 
