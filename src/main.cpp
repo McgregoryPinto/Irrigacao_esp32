@@ -161,8 +161,10 @@ void updateLCD() {
     lcd.setCursor(0, 0);
     lcd.print(F("S1 S2 S3 S4 S5 L"));
     lcd.setCursor(0, 1);
-    for (int i = 0; i < NUM_SESSIONS; i++) {
-      lcd.print(sessionActive[i] ? F(" 1") : F(" 0"));
+    // ajuste para fit no lcd
+    lcd.print(sessionActive[0] ? F(" 1") : F(" 0"));
+    for (int i = 1; i < NUM_SESSIONS; i++) {
+      lcd.print(sessionActive[i] ? F("  1") : F("  0"));
     }
     lcd.print(lightState ? F(" 1") : F(" 0"));
   } else {
