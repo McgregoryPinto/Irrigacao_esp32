@@ -62,31 +62,6 @@ void setBacklight(bool state) {
   backlightOn = state;
 }
 
-// normalize hour to miliseconds
-unsigned long normalizeHourToMileseconds(int hour) {
-  return (unsigned long)hour * 3600000UL;
-}
-
-// normalize miliseconds to hour
-int normalizeMilesecondsToHour(unsigned long ms) {
-  return (int)(ms / 3600000UL);
-}
-
-// normalize min to miliseconds
-unsigned long normalizeMinToMileseconds(int min) {
-  return (unsigned long)min * 60000UL;
-}
-
-// normalize miliseconds to min
-int normalizeMilesecondsToMin(unsigned long ms) {
-  return (int)(ms / 60000UL);
-}
-
-// normalize threshold percent to reading
-int normalizeThresholdPercentToReading(int percent) {
-  return (int)(((100 - percent) * 4095UL) / 100UL);
-}
-
 // Load configuration and define handlers
 void loadConfig() {
   prefs.begin("config", false);
@@ -198,7 +173,7 @@ void updateLCD(struct tm tm_info) {
 
 void connectWiFi() {
   char charIP[30]={};
-  lcd.println("Conectando WiFi");
+  lcd.printf("Conectando WiFi");
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("WiFi...");
@@ -207,7 +182,7 @@ void connectWiFi() {
     delay(500);
   }
   lcd.clear();
-  lcd.println("WiFi OK");
+  lcd.printf("WiFi OK");
   Serial.println("OK");
   sprintf(charIP, "%s", WiFi.localIP().toString());
   Serial.println(charIP);
