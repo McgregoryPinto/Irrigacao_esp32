@@ -12,7 +12,7 @@ const uint8_t sensorPins[NUM_SESSIONS] = {37, 38, 39, 32, 33};
 const uint8_t relayPins[NUM_SESSIONS]  = {14, 15, 16, 17, 18};
 
 // Relé da bomba (única)
-const uint8_t pumpPin  = 12;
+const uint8_t pumpPin  = 14;
 // Relé da luz artificial (única)
 const uint8_t lightPin = 13;
 
