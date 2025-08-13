@@ -145,6 +145,15 @@ void IRAM_ATTR onFlowPulse() {
 static unsigned long lastLcdSwitch = 0;
 static bool lcdMode = false;
 
+
+
+bool sessionActive[NUM_SESSIONS]   = {false};
+unsigned long sessionStart[NUM_SESSIONS]  = {0};
+unsigned long nextAllowed[NUM_SESSIONS]   = {0};
+
+bool pumpState  = false;
+bool lightState = false;
+
 // Atualiza o display LCD de acordo com lcdMode
 void updateLCD() {
   lcd.clear();
@@ -163,13 +172,6 @@ void updateLCD() {
     lcd.print(WiFi.localIP().toString());
   }
 }
-
-bool sessionActive[NUM_SESSIONS]   = {false};
-unsigned long sessionStart[NUM_SESSIONS]  = {0};
-unsigned long nextAllowed[NUM_SESSIONS]   = {0};
-
-bool pumpState  = false;
-bool lightState = false;
 
 void connectWiFi() {
   char charIP[30]={};
