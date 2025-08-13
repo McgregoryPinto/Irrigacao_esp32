@@ -43,6 +43,8 @@ const ul FLOW_CHECK_MS            = 30UL * 1000UL;
 // Mínimo de pulsos em 30s para considerar fluxo OK
 const unsigned int MIN_FLOW_PULSES = 100;
 
+// tempo de backlight do LCD em segundos
+const unsigned int LCD_BACKLIGHT_ON_TIME = 6; // Tempo em milissegundos para manter o backlight ligado
 
 // Wi-Fi / NTP (preencha com sua rede e fuso)
 const char* WIFI_SSID     = "al_capone";

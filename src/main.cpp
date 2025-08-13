@@ -21,16 +21,46 @@ int cfgIrrgCoolDwn = IRRIGATION_COOLDOWN / 3600000;
 int cfgLightStartH = LIGHT_START_HOUR;
 int cfgLightDurationH = LIGHT_DURATION_HOURS;
 int cfgHumidityThresholdReading = HUMIDITY_THRESHOLD_READING;
+int cfgLcdBckLgtOn = LCD_BACKLIGHT_ON_TIME * 1000; // Convert seconds to milliseconds
 
-// Derived runtime values
-unsigned long cfgIrrigationDuration;
-unsigned long cfgIrrigationCooldown;
+// Derived configuration values
+unsigned long cfgIrrigationDuration = IRRIGATION_DURATION;
+unsigned long cfgIrrigationCooldown = IRRIGATION_COOLDOWN;
+
+// LCD display variables
+static unsigned long lastLcdSwitch = 0;
+static unsigned long lastBacklightSwitch = 0;
+static bool lcdMode = false;
+bool backlightOn = false; // backlight state
+bool statusChanged = false; // status changed flag
+
+// Irrigation session state
+bool sessionActive[NUM_SESSIONS]   = {false};
+unsigned long sessionStart[NUM_SESSIONS]  = {0};
+unsigned long nextAllowed[NUM_SESSIONS]   = {0};
+bool pumpState  = false;
+bool lightState = false;
+
+// --- Sensor de fluxo de água ---
+volatile unsigned int flowPulseCount = 0;
+unsigned long lastFlowCheck = 0;
 
 // Function prototypes
 void loadConfig();
 void handleConfigGet();
 void handleConfigPost();
 WebServer server(80);
+
+
+// set the backlight state
+void setBacklight(bool state) {
+  if (state) {
+    lcd.backlight();
+  } else {
+    lcd.noBacklight();
+  }
+  backlightOn = state;
+}
 
 // normalize hour to miliseconds
 unsigned long normalizeHourToMileseconds(int hour) {
@@ -65,6 +95,7 @@ void loadConfig() {
   cfgIrrgCoolDwn = prefs.getUInt("cfgIrrgCoolDwn", cfgIrrgCoolDwn);
   cfgLightStartH = prefs.getUInt("cfgLightStartH", cfgLightStartH);
   cfgLightDurationH = prefs.getUInt("lightDurationH", cfgLightDurationH);
+  cfgLcdBckLgtOn = prefs.getUInt("cfgLcdBckLgtOn", cfgLcdBckLgtOn);
   prefs.end();
   Serial.printf("Configuração carregada:\n");
   Serial.printf("  Humidity threshold percent: %d\n", cfgHumidPerct);
@@ -72,11 +103,13 @@ void loadConfig() {
   Serial.printf("  Irrigation cooldown (h): %d\n", cfgIrrgCoolDwn);
   Serial.printf("  Light start hour: %d\n", cfgLightStartH);
   Serial.printf("  Light duration (h): %d\n", cfgLightDurationH);
+  Serial.printf("  LCD Backlight On Time (s): %d\n", cfgLcdBckLgtOn);
 
   // Derived values
   cfgHumidityThresholdReading = (int)(((100 - cfgHumidPerct) * 4095UL) / 100UL);
   cfgIrrigationDuration = (unsigned long)cfgIrrgtDrtion * 60000UL;
   cfgIrrigationCooldown = (unsigned long)cfgIrrgCoolDwn * 3600000UL;
+  cfgLcdBckLgtOn = cfgLcdBckLgtOn * 1000UL; // Convert seconds to milliseconds
 }
 
 void handleConfigGet() {
@@ -88,6 +121,7 @@ void handleConfigGet() {
   html += "<label>Irrigation cooldown (h) <input type=\"number\" name=\"irrigationCooldownH\" min=\"0\" max=\"24\" value=\"" + String(cfgIrrgCoolDwn) + "\"></label><br>";
   html += "<label>Light start hour (h) <input type=\"number\" name=\"lightStartHourVar\" min=\"0\" max=\"23\" value=\"" + String(cfgLightStartH) + "\"></label><br>";
   html += "<label>Light duration (h) <input type=\"number\" name=\"lightDurationH\" min=\"0\" max=\"24\" value=\"" + String(cfgLightDurationH) + "\"></label><br>";
+  html += "<label>LCD Backlight On Time (s) <input type=\"number\" name=\"lcdBckLgtOn\" min=\"1\" max=\"300\" value=\"" + String(cfgLcdBckLgtOn / 1000UL) + "\"></label><br>";
   html += "<input type=\"submit\" value=\"Salvar\">";
   html += "</form>";
   html += "<p><button onclick=\"location.href='/'\">Início</button></p>";
@@ -116,43 +150,29 @@ void handleConfigPost() {
     Serial.printf("Nova duração luz: {%s}\n", server.arg("lightDurationH").c_str());
     cfgLightDurationH = server.arg("lightDurationH").toInt();
   }
+  if (server.hasArg("lcdBckLgtOn")) {
+    Serial.printf("Novo tempo de luz LCD: {%s}\n", server.arg("lcdBckLgtOn").c_str());
+    cfgLcdBckLgtOn = server.arg("lcdBckLgtOn").toInt();
+  }
   prefs.begin("config", false);
   prefs.putUInt("cfgHumidPerct", cfgHumidPerct);
   prefs.putUInt("cfgIrrgtDrtion", cfgIrrgtDrtion);
   prefs.putUInt("cfgIrrgCoolDwn", cfgIrrgCoolDwn);
   prefs.putUInt("cfgLightStartH", cfgLightStartH);
   prefs.putUInt("lightDurationH", cfgLightDurationH);
+  prefs.putUInt("cfgLcdBckLgtOn", cfgLcdBckLgtOn);
   prefs.end();
   cfgHumidityThresholdReading = (int)(((100 - cfgHumidPerct) * 4095UL) / 100UL);
   cfgIrrigationDuration = (unsigned long)cfgIrrgtDrtion * 60000UL;
   cfgIrrigationCooldown = (unsigned long)cfgIrrgCoolDwn * 3600000UL;
+  cfgLcdBckLgtOn = cfgLcdBckLgtOn * 1000UL; // Convert seconds to milliseconds
   server.sendHeader("Location", "/config");
   server.send(303, "text/plain", "");
 }
 
-// --- Sensor de fluxo de água ---
-volatile unsigned int flowPulseCount = 0;
-unsigned long lastFlowCheck = 0;
-
 void IRAM_ATTR onFlowPulse() {
   flowPulseCount++;
 }
-
-
-
-
-// LCD display variables
-static unsigned long lastLcdSwitch = 0;
-static bool lcdMode = false;
-
-
-
-bool sessionActive[NUM_SESSIONS]   = {false};
-unsigned long sessionStart[NUM_SESSIONS]  = {0};
-unsigned long nextAllowed[NUM_SESSIONS]   = {0};
-
-bool pumpState  = false;
-bool lightState = false;
 
 // Atualiza o display LCD de acordo com lcdMode
 void updateLCD(struct tm tm_info) {
@@ -216,6 +236,7 @@ void setup() {
   lcd.init();
   lcd.backlight();
   lcd.clear();
+  backlightOn = true; // backlight state
   // configura sensor de fluxo de água (pulsos)
   pinMode(FLOW_SENSOR_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), onFlowPulse, RISING);
@@ -250,26 +271,17 @@ void setup() {
     server.send(404, "text/plain", "Página não encontrada");
   });
   server.begin();
-  /*
-  Serial.println("=== Configuração Iniciada ===");
-  Serial.printf("Threshould de umidade: %d (valor para comparação com o sensor)\n",cfgHumidityThresholdReading);
-  Serial.printf("Sessões: %d\n", NUM_SESSIONS);
-  Serial.print("Duração irrigação: "); Serial.print(cfgIrrgtDrtion); Serial.println(" min");
-  Serial.print("Cooldown irrigação: "); Serial.print(cfgIrrgCoolDwn); Serial.println(" h");
-  Serial.print("Luz: inicia às "); Serial.print(cfgLightStartH); Serial.print(" h por "); Serial.print(cfgLightDurationH); Serial.println(" h");
-  Serial.println("Servidor HTTP iniciado.");
-  Serial.print("Acesse em: http://"); Serial.print(WiFi.localIP()); Serial.println("/");
-  Serial.println("===========================");
-  */
 }
 
 void loop() {
   struct tm tm_info;
+  
   if (!getLocalTime(&tm_info)) {
     Serial.println("Erro NTP");
   }
   int hour    = tm_info.tm_hour;
   unsigned long now = millis();
+  statusChanged = false;
 
   // 1) SESSÕES DE IRRIGAÇÃO
   bool anyOn = false;
@@ -280,6 +292,7 @@ void loop() {
       if ((now - sessionStart[i] >= cfgIrrigationDuration) || !isDaytime(hour)) {
         digitalWrite(relayPins[i], LOW);
         sessionActive[i] = false;
+        statusChanged = true;
         nextAllowed[i]   = now + cfgIrrigationCooldown;
         Serial.printf("Sessão %d → OFF\n", i);
       } else {
@@ -294,6 +307,7 @@ void loop() {
         sessionActive[i] = true;
         sessionStart[i]  = now;
         anyOn = true;
+        statusChanged = true;
         Serial.printf("Sessão %d → ON (leitura=%d)\n", i, v);
       }
     }
@@ -316,13 +330,16 @@ void loop() {
   if (shouldLight && !lightState) {
     digitalWrite(lightPin, HIGH);
     lightState = true;
+    statusChanged = true;
     Serial.println("Luz ON");
   } else if (!shouldLight && lightState) {
     digitalWrite(lightPin, LOW);
     lightState = false;
+    statusChanged = true;
     Serial.println("Luz OFF");
   }
   /* teste de impressão */
+  /*
   Serial.println(&tm_info, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
  // Serial.printf("Hora atual: %02d:%02d:%02d\n", hour, tm_info.tm_min, tm_info.tm_sec);
   Serial.printf("Bomba: %s\n", pumpState ? "ON" : "OFF");
@@ -330,14 +347,30 @@ void loop() {
   for (int i = 0; i < NUM_SESSIONS; i++) {
     Serial.printf("Sessão %d: %s\n", i, sessionActive[i] ? "ON" : "OFF");
   }
-  /**/
+  */
   // Atualiza LCD a cada 30 segundos
   if (now - lastLcdSwitch >= 30000) {
     lcdMode = !lcdMode;
     lastLcdSwitch = now;
   }
   updateLCD(tm_info);
-
+  // Gerencia backlight do LCD
+  if (statusChanged) {
+    backlightOn = true;
+    setBacklight(true);
+    lastBacklightSwitch = now;
+  }
+  /*
+  Serial.printf("Backlight: %s\n", backlightOn ? "ON" : "OFF");
+  Serial.printf("Status changed: %s\n", statusChanged ? "YES" : "NO");
+  Serial.printf("now {%ld}  last {%ld} (now - last) {%ld} config {%ld}\n",now,lastBacklightSwitch,now-lastBacklightSwitch, cfgLcdBckLgtOn);
+  */
+  // Desliga backlight após cfgLcdBckLgtOn milissegundos
+  if (backlightOn && (now - lastBacklightSwitch >= cfgLcdBckLgtOn)) {
+    setBacklight(false);
+    backlightOn = false;
+  }
+  
   delay(1000);
 
 
