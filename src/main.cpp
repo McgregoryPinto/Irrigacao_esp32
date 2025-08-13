@@ -207,6 +207,7 @@ void setup() {
     server.send(404, "text/plain", "Página não encontrada");
   });
   server.begin();
+  /*
   Serial.println("=== Configuração Iniciada ===");
   Serial.printf("Threshould de umidade: %d (valor para comparação com o sensor)\n",cfgHumidityThresholdReading);
   Serial.printf("Sessões: %d\n", NUM_SESSIONS);
@@ -216,6 +217,7 @@ void setup() {
   Serial.println("Servidor HTTP iniciado.");
   Serial.print("Acesse em: http://"); Serial.print(WiFi.localIP()); Serial.println("/");
   Serial.println("===========================");
+  */
 }
 
 void loop() {
