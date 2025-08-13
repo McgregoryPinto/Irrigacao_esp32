@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define NUM_SESSIONS 5
+// NAO USAR A PORTA 12 - DA ERRO NO PLATAFORMIO AO ENVIAR O PGM PRO ESP32
 
 // Sensores de umidade: ADC1_CH1 a ADC1_CH5 → GPIO 37, 38, 39, 32, 33
 const uint8_t sensorPins[NUM_SESSIONS] = {37, 38, 39, 32, 33};
@@ -11,6 +12,7 @@ const uint8_t sensorPins[NUM_SESSIONS] = {37, 38, 39, 32, 33};
 // Relés de irrigação: GPIO14 a GPIO18
 const uint8_t relayPins[NUM_SESSIONS]  = {14, 15, 16, 17, 18};
 
+// NAO USAR A PORTA 12 - DA ERRO NO PLATAFORMIO AO ENVIAR O PGM PRO ESP32
 // Relé da bomba (única)
 const uint8_t pumpPin  = 14;
 // Relé da luz artificial (única)
