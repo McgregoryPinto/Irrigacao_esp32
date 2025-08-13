@@ -198,6 +198,7 @@ void updateLCD(struct tm tm_info) {
 
 void connectWiFi() {
   char charIP[30]={};
+  lcd.println("Conectando WiFi");
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("WiFi...");
@@ -205,14 +206,15 @@ void connectWiFi() {
     Serial.print('.');
     delay(500);
   }
+  lcd.clear();
+  lcd.println("WiFi OK");
   Serial.println("OK");
   sprintf(charIP, "%s", WiFi.localIP().toString());
   Serial.println(charIP);
   configTzTime(TZ_INFO, "pool.ntp.org", "time.nist.gov");
   setenv("TZ",TIMEZONE,1);  //  Now adjust the TZ.  Clock settings are adjusted to show the new local time
   tzset();
-  
-
+  delay(1000);
 }
 
 bool isDaytime(int h) {
