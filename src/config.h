@@ -50,4 +50,10 @@ const char* WIFI_PASSWORD = "Brooklyn1899";
 // Fuso horário de Brasília
 const char* TZ_INFO       = "America/Sao_Paulo";
 
+
+// LCD I2C configuration
+const uint8_t LCD_I2C_ADDR = 0x27; // Endereço I2C do display LCD
+const uint8_t LCD_COLUMNS = 16;    // Número de colunas do display
+const uint8_t LCD_ROWS    = 2;     // Número de linhas do display
+
 #endif // CONFIG_H
