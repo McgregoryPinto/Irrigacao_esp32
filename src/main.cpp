@@ -254,7 +254,7 @@ void setup() {
   pinMode(pumpPin, OUTPUT);  digitalWrite(pumpPin, LOW);
   pinMode(lightPin, OUTPUT); digitalWrite(lightPin, LOW);
   server.on("/", HTTP_GET, [](){
-    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>Monitoramento Horta</title></head><body>";
+    String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><meta http-equiv='refresh' content='10'><title>Monitoramento Horta</title></head><body>";
     html += "<h1>Monitoramento da Horta</h1>";
     html += "<p><strong>Luz</strong>: Início às " + String(cfgLightStartH) + ":00 por " + String(cfgLightDurationH) + "h</p>";
     html += "<p><strong>Irrigação</strong>: Duração " + String(cfgIrrgtDrtion) + "min, intervalo " + String(cfgIrrgCoolDwn) + "h</p>";
