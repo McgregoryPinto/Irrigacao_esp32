@@ -188,6 +188,10 @@ void connectWiFi() {
   sprintf(charIP, "%s", WiFi.localIP().toString());
   Serial.println(charIP);
   configTzTime(TZ_INFO, "pool.ntp.org", "time.nist.gov");
+  setenv("TZ",TIMEZONE,1);  //  Now adjust the TZ.  Clock settings are adjusted to show the new local time
+  tzset();
+  
+
 }
 
 bool isDaytime(int h) {
@@ -317,13 +321,15 @@ void loop() {
     lightState = false;
     Serial.println("Luz OFF");
   }
-  /* teste de impressão 
-  Serial.printf("Hora atual: %02d:%02d:%02d\n", hour, tm_info.tm_min, tm_info.tm_sec);
-  Serial.printf("Bomba: %s, Luz: %s\n", pumpState ? "ON" : "OFF", lightState ? "ON" : "OFF");
+  /* teste de impressão */
+  Serial.println(&tm_info, "%A, %B %d %Y %H:%M:%S zone %Z %z ");
+ // Serial.printf("Hora atual: %02d:%02d:%02d\n", hour, tm_info.tm_min, tm_info.tm_sec);
+  Serial.printf("Bomba: %s\n", pumpState ? "ON" : "OFF");
+  Serial.printf("Luz: %s\n",lightState ? "ON" : "OFF");
   for (int i = 0; i < NUM_SESSIONS; i++) {
     Serial.printf("Sessão %d: %s\n", i, sessionActive[i] ? "ON" : "OFF");
   }
-  */
+  /**/
   // Atualiza LCD a cada 30 segundos
   if (now - lastLcdSwitch >= 30000) {
     lcdMode = !lcdMode;

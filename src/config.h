@@ -49,6 +49,7 @@ const char* WIFI_SSID     = "al_capone";
 const char* WIFI_PASSWORD = "Brooklyn1899";
 // Fuso horário de Brasília
 const char* TZ_INFO       = "America/Sao_Paulo";
+const char* TIMEZONE = "<-03>3"; // UTC-3 (horário de Brasília)
 
 
 // LCD I2C configuration
