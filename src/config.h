@@ -41,8 +41,8 @@ const uint8_t DAY_END_HOUR   = 20;
 const uint8_t FLOW_SENSOR_PIN     = 34;
 // Verificar fluxo a cada 30 segundos
 typedef unsigned long ul;
-const ul FLOW_CHECK_MS            = 30UL * 1000UL;
-// Mínimo de pulsos em 30s para considerar fluxo OK
+const ul FLOW_CHECK_MS            = 10UL * 1000UL;
+// Mínimo de pulsos em FLOW_CHECK_MS para considerar fluxo OK
 const unsigned int MIN_FLOW_PULSES = 100;
 
 // tempo de backlight do LCD em segundos
@@ -60,5 +60,30 @@ const char* TIMEZONE = "<-03>3"; // UTC-3 (horário de Brasília)
 const uint8_t LCD_I2C_ADDR = 0x27; // Endereço I2C do display LCD
 const uint8_t LCD_COLUMNS = 16;    // Número de colunas do display
 const uint8_t LCD_ROWS    = 2;     // Número de linhas do display
+
+// configuração de ON/OFF dos relés
+// vamos usar a conexão inversa, ou seja, LOW = ON e HIGH = OFF
+// Isso é útil para evitar problemas com relés que ficam ligados por padrão quando não recebem sinal
+// (alguns relés podem ser acionados com HIGH, outros com LOW)
+// Verifique o tipo de relé que você está usando e ajuste conforme necessário.
+// Aqui, LOW significa que o relé está ativo (ligado) e HIGH significa que o relé está inativo (desligado).
+// Isso é comum em relés de estado sólido ou relés de contato normalmente aberto (NO).
+// Se você estiver usando relés de contato normalmente fechado (NC), pode ser necessário inverter esses valores.
+#define RELAY_TYPE_NC // Descomente esta linha se estiver usando relés normalmente fechados (NC)
+// #define RELAY_TYPE_NO // Descomente esta linha se estiver usando relés normalmente abertos (NO)
+// RELAY_ON e RELAY_OFF são definidos de acordo com o tipo de relé - portando escolha apenas um deles
+#ifdef RELAY_TYPE_NC
+const uint8_t RELAY_ON = LOW;
+const uint8_t RELAY_OFF = HIGH;
+#endif
+#ifdef RELAY_TYPE_NO
+const uint8_t RELAY_ON = HIGH;
+const uint8_t RELAY_OFF = LOW;  
+#endif
+
+// usar sensor de fluxo de água?
+// Se você não tiver um sensor de fluxo, comente a linha abaixo.
+// Isso desativará o sensor de fluxo e evitará erros de compilação.
+//#define FLOW_SENSOR_ACTIVE
 
 #endif // CONFIG_H

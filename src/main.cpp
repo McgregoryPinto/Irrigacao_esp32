@@ -145,6 +145,14 @@ void handleConfigPost() {
   server.send(303, "text/plain", "");
 }
 
+// function called on flow sensor pulse
+// increments the flowPulseCount variable
+// this is used to count the water flow pulses
+// and can be used for further processing if needed
+// e.g., calculating total water usage
+// or triggering actions based on flow rate.
+// This function is called in an interrupt context, so it should be fast and not block.
+// It simply increments a counter.
 void IRAM_ATTR onFlowPulse() {
   flowPulseCount++;
 }
@@ -226,10 +234,10 @@ void setup() {
   for (int i = 0; i < NUM_SESSIONS; i++) {
     pinMode(sensorPins[i], INPUT);
     pinMode(relayPins[i], OUTPUT);
-    digitalWrite(relayPins[i], LOW);
+    digitalWrite(relayPins[i], RELAY_OFF);
   }
-  pinMode(pumpPin, OUTPUT);  digitalWrite(pumpPin, LOW);
-  pinMode(lightPin, OUTPUT); digitalWrite(lightPin, LOW);
+  pinMode(pumpPin, OUTPUT);  digitalWrite(pumpPin, RELAY_OFF);
+  pinMode(lightPin, OUTPUT); digitalWrite(lightPin, RELAY_OFF);
   server.on("/", HTTP_GET, [](){
     String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'><meta http-equiv='refresh' content='10'><title>Monitoramento Horta</title></head><body>";
     html += "<h1>Monitoramento da Horta</h1>";
@@ -252,13 +260,38 @@ void setup() {
 
 void loop() {
   struct tm tm_info;
-  
   if (!getLocalTime(&tm_info)) {
     Serial.println("Erro NTP");
   }
   int hour    = tm_info.tm_hour;
   unsigned long now = millis();
   statusChanged = false;
+
+#ifdef FLOW_SENSOR_ACTIVE
+if (pumpState)
+{
+  if ((now - lastFlowCheck) >= FLOW_CHECK_MS)
+  {
+    if (flowPulseCount < MIN_FLOW_PULSES)
+    {
+      // if no flow detected, turn off pump and reset state
+      digitalWrite(pumpPin, RELAY_OFF);
+      pumpState = false;
+      Serial.println("Bomba OFF (sem fluxo detectado)");
+      lcd.clear();
+      lcd.print(F("Bomba OFF (sem fluxo)"));
+      // turn off all sessions
+      for (int i = 0; i < NUM_SESSIONS; i++) {
+        sessionActive[i] = false;
+        nextAllowed[i]   = now + cfgIrrigationCooldown; // reset cooldown
+      }
+      statusChanged = true;
+    }
+    lastFlowCheck = now; // reset flow check timer
+    flowPulseCount = 0; // reset pulse count
+  }
+}
+#endif // if FLOW_SENSOR_ACTIVE
 
   // 1) SESSÕES DE IRRIGAÇÃO
   bool anyOn = false;
@@ -267,7 +300,7 @@ void loop() {
     if (sessionActive[i]) {
       // terminar ciclo após 10min ou se anoitecer
       if ((now - sessionStart[i] >= cfgIrrigationDuration) || !isDaytime(hour)) {
-        digitalWrite(relayPins[i], LOW);
+        digitalWrite(relayPins[i], RELAY_OFF);
         sessionActive[i] = false;
         statusChanged = true;
         nextAllowed[i]   = now + cfgIrrigationCooldown;
@@ -280,7 +313,7 @@ void loop() {
       // iniciar se seco, for dia e cooldown passou
       int v = analogRead(sensorPins[i]);
       if (isDaytime(hour) && now >= nextAllowed[i] && v > cfgHumidityThresholdReading) {
-        digitalWrite(relayPins[i], HIGH);
+        digitalWrite(relayPins[i], RELAY_ON);
         sessionActive[i] = true;
         sessionStart[i]  = now;
         anyOn = true;
@@ -292,25 +325,27 @@ void loop() {
 
   // 2) BOMBA (única) — ON se qualquer relé de irrigação ON
   if (anyOn && !pumpState) {
-    digitalWrite(pumpPin, HIGH);
+    digitalWrite(pumpPin, RELAY_ON);
     pumpState = true;
     Serial.println("Bomba ON");
+    // checar se tem fluxo de água
+    flowPulseCount = 0; // reset pulse count
+    lastFlowCheck = now; // store flowPulseCount
   } else if (!anyOn && pumpState) {
-    digitalWrite(pumpPin, LOW);
+    digitalWrite(pumpPin, RELAY_OFF);
     pumpState = false;
     Serial.println("Bomba OFF");
   }
   server.handleClient();
-
   // 3) LUZ ARTIFICIAL (única)
   bool shouldLight = isDaytime(hour) && isLightPeriod(hour);
   if (shouldLight && !lightState) {
-    digitalWrite(lightPin, HIGH);
+    digitalWrite(lightPin, RELAY_ON);
     lightState = true;
     statusChanged = true;
     Serial.println("Luz ON");
   } else if (!shouldLight && lightState) {
-    digitalWrite(lightPin, LOW);
+    digitalWrite(lightPin, RELAY_OFF);
     lightState = false;
     statusChanged = true;
     Serial.println("Luz OFF");
