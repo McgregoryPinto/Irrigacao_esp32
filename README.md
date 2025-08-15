@@ -16,7 +16,7 @@ Este projeto implementa um sistema de monitoramento e irrigação automática de
 - Placa ESP32 DOIT DevKit V1 (ESP32-D).
 - 5 sensores de umidade de solo conectados aos pinos GPIO 37, 38, 39, 32 e 33.
 - 5 módulos de relé para as sessões de irrigação (GPIO 14–18).
-- Módulo de relé para a bomba de água (GPIO 12).
+- Módulo de relé para a bomba de água (GPIO 14).
 - Módulo de relé para a luz artificial (GPIO 13).
 - (Opcional) Sensor de fluxo de água conectado ao GPIO 34.
 
