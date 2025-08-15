@@ -18,7 +18,7 @@ Este projeto implementa um sistema de monitoramento e irrigação automática de
 - 5 módulos de relé para as sessões de irrigação (GPIO 14–18).
 - Módulo de relé para a bomba de água (GPIO 14).
 - Módulo de relé para a luz artificial (GPIO 13).
-- (Opcional) Sensor de fluxo de água conectado ao GPIO 34.
+- (Opcional) Sensor de fluxo de água conectado ao GPIO 34 (para habilitar, descomente **#define FLOW_SENSOR_ACTIVE** em `src/config.h`).
 
 ## Configuração de Software
 
@@ -38,8 +38,14 @@ Este projeto implementa um sistema de monitoramento e irrigação automática de
    ```
 2. Edite `src/config.h` para definir:
    - `WIFI_SSID` e `WIFI_PASSWORD` da sua rede.
-   - `TZ_INFO` (ex.: "America/Sao_Paulo").
-   - Outros parâmetros de irrigação e luz conforme necessidade.
+   - `TZ_INFO` (ex.: "America/Sao_Paulo") e `TIMEZONE` (ex.: "<-03>3").
+   - Tipo de relés: descomente apenas uma das linhas em `src/config.h`:
+     ```c
+     #define RELAY_TYPE_NC // para relés normalmente fechados (NC)
+     // #define RELAY_TYPE_NO // para relés normalmente abertos (NO)
+     ```
+   - Sensor de fluxo de água (GPIO 34): descomente `#define FLOW_SENSOR_ACTIVE` para habilitar.
+   - Demais parâmetros de irrigação e luz (threshold de umidade, duração de irrigação, cooldown, horários de luz artificial etc.) conforme necessidade.
 3. Compile para o ESP32 (placa `esp32doit-devkit-v1`):
    ```bash
    pio run -e esp32doit-devkit-v1
